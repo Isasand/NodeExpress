@@ -1,11 +1,11 @@
 var express = require('express');
-var mysql = require('mysql');
 var router = express.Router();
+var mysql = require('mysql')
 const requestIp = require('request-ip');
-var PropertiesReader = require('properties-reader');
-var properties = PropertiesReader('./mysql.properties');
 
-function convertDate(date) {
+
+function convertDate() {
+	var date = new Date();
 	var yyyy = date.getFullYear().toString();
 	var mm = (date.getMonth()+1).toString();
 	var dd  = date.getDate().toString();
@@ -25,7 +25,7 @@ var requestInfoMw = (req, res, next) => {
 		originalUrl : req.originalUrl, 
 		method : req.method, 
 		statusCode : res.statusCode,
-		timeStamp : convertDate(new Date()),
+		timeStamp : convertDate(),
 		clientIp : requestIp.getClientIp(req)
 	}
 	res.locals.requestInfo = requestInfo; 
@@ -35,36 +35,28 @@ var requestInfoMw = (req, res, next) => {
 
 connectMysqlMw = (req, res, next) =>{
 	var connection = mysql.createConnection({
-		host     : properties.get('host'),
-		user     : properties.get('user'),
-		password : properties.get('password'),
-		database : propertiews.get('database')
+		host     : '192.168.0.131',
+		user     : 'expressApplication',
+		password : 'express',
+		database : 'expressapp'
 	});
 
-	var i = res.locals.requestInfo;
-
 	connection.connect()
-	var query = "INSERT INTO reqdata VALUES ('" + i.originalUrl + "','" + i.method + "','" + i.statusCode + "','" + i.timeStamp + "','" + i.clientIp+ "');"; 
-
-	connection.query(query, (err, rows, fields) =>{
+	connection.query('select * from reqdata', (err, rows, fields) =>{
 		if(err) throw err
+		//console.log(rows[0])
 	})
 
 	console.log(res.locals.requestInfo.originalUrl)
-
 	connection.end(); 
 	next()
 }
 
 
-router.use(requestInfoMw);
-router.use(connectMysqlMw); 
+module.exports = {
 
-router.get('/', (req, res) => {
-   res.send(res.locals);
-});
+	convertDate : convertDate(), 
+	requestInfoMw : requestInfoMw(), 
+	connectMysqlMw : connectMysqlMw()
 
-
-module.exports = router;
-
-
+};
